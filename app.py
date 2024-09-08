@@ -30,8 +30,11 @@ def read_locked_file(file_path):
     )
     
     try:
-        _, content = win32file.ReadFile(hfile, os.path.getsize(file_path))
-        return content.decode('utf-8')
+        file_size = os.path.getsize(file_path)
+        _, content = win32file.ReadFile(hfile, file_size)
+        return content  # Return as bytes without decoding
+    except Exception as e:
+        raise RuntimeError(f"Failed to read file {file_path}: {e}")
     finally:
         win32file.CloseHandle(hfile)
 
@@ -49,7 +52,8 @@ def virus_hash_detect(directory, result_text_widget):
         
         try:
             content = read_locked_file(file_path)
-            if any(hash in content for hash in virus_hashes):
+            content_str = content.decode('utf-8', errors='ignore')  # Decode with fallback for errors
+            if any(hash in content_str for hash in virus_hashes):
                 os.remove(file_path)
                 result_text_widget.insert(tk.END, f'⚠️ {file_path} ⚠️ Contains A Virus! Removing affected file! ⚠️\n')
             else:
